@@ -86,6 +86,7 @@ class FireStore:
 
     def update(self):
         for key in self.items:
+            # logger.info(('update', key, self.items[key].update_stack))
             if self.items[key].update_stack:
                 db = self.collection.document(key)
                 db.update(self.items[key].update_stack)

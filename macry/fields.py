@@ -27,13 +27,13 @@ class Field:
         if self.validate(value):
             if value is None:
                 value = self.default
-            instance.__dict__[self.prop_name] = value
-            # --------------------------------------------------------
-            if hasattr(instance, '__path__'):
-                instance.__path__["root"]().update_stack.setdefault(
-                    f'{instance.__path__["path"]}.{self.prop_name}', value
-                )
-            # --------------------------------------------------------
+
+            # Compare for same values and assign to it.
+            compare_to = self if instance is None else instance.__dict__.get(
+                self.prop_name, None)
+            if compare_to != value:
+                instance.__dict__[self.prop_name] = value
+                self.register_update(instance, value)
         else:
             if hasattr(self, 'entity') and self.entity:
                 if isinstance(self.entity, list):
@@ -49,6 +49,32 @@ class Field:
             return self
         else:
             return instance.__dict__.get(self.prop_name, None)
+
+    def register_update(self, instance, value):
+        if hasattr(instance, '__path__'):
+            if hasattr(value, '__type_name__') and \
+               value.__type_name__ == 'BaseModel':
+                update_value = value.to_dict()
+                instance.__dict__[self.prop_name].route_paths(
+                    instance.__path__["root"],
+                )
+                instance.__dict__[self.prop_name].__object_added__ = True
+                instance.__path__["root"]().update_stack[
+                    f'{instance.__path__["path"]}.{self.prop_name}'
+                ] = update_value
+            else:
+                update_value = value
+                if instance.__dict__.get('__object_added__', False):
+                    instance.__path__["root"]().update_stack[
+                        instance.__path__["path"]][self.prop_name] = \
+                            update_value
+                else:
+                    instance.__path__["root"]().update_stack[
+                        f'{instance.__path__["path"]}.{self.prop_name}'
+                    ] = update_value
+                    # logger.info(f'Set Update stack '
+                    #   f'{instance.__path__["path"]}.{self.prop_name},' + \
+                    #   f' Val: {value}, Object: {instance.__path__["root"]()}'
 
 
 class FireObject(Field):
@@ -142,8 +168,11 @@ class FireArray(Field, list):
                  default=None,
                  entity: Field = None,
                  required=False,
-                 key=None):
+                 key=None,
+                 collection=None):
         super().__init__()
+        if collection:
+            self.extend(collection)
         self._type = 'array'
         self.default = default
         self.required = required

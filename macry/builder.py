@@ -1,9 +1,10 @@
 from .connects import FireStore
-from .fields import FireMap, FireArray
+from .fields import FireMap, FireArray, Field
 import weakref
 
 
-class FireModel(FireStore):
+class FireModel(FireStore, Field):
+    __type_name__ = 'BaseModel'
 
     def __init__(self, *args, **kwargs):
         super().__init__(self)
