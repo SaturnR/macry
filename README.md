@@ -1,6 +1,7 @@
 # macry
+Python object-document mapper (ODM) for google FireStore
 
-## install
+## Install
 
 ```bash
 pip install macry
