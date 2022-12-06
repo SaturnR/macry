@@ -20,6 +20,7 @@ class FireStore:
         self.key = None
         self.items = {}
         self.update_stack = {}
+        self.model_object = None
 
     def connect(self, collection_name,
                 project=None,
@@ -35,7 +36,7 @@ class FireStore:
                     scopes=(
                         "https://www.googleapis.com/auth/cloud-platform",
                         "https://www.googleapis.com/auth/datastore",
-                    ),
+                    ), 
                 )
 
             self.client = firestore.Client(project=project,
@@ -49,7 +50,7 @@ class FireStore:
     def kind(self):
         return self.collection_name
 
-    def read(self, key):
+    def read(self, key, model=None):
         self.key = key
         try:
             doc_ref = self.collection.document(key)
@@ -60,6 +61,10 @@ class FireStore:
         except Exception:
             raise
         if type(self).__name__ == 'FireStore':
+            if model:
+                self.model_object = model.from_dict(doc.to_dict())
+                self.model_object.route_paths()
+                return self.model_object
             return doc.to_dict()
         else:
             # TODO - convert doc to type lazy loading
@@ -85,11 +90,18 @@ class FireStore:
             raise
 
     def update(self):
-        for key in self.items:
-            # logger.info(('update', key, self.items[key].update_stack))
-            if self.items[key].update_stack:
-                db = self.collection.document(key)
-                db.update(self.items[key].update_stack)
+        if self.items:
+            for key in self.items:
+                # logger.info(('update', key, self.items[key].update_stack))
+                if self.items[key].update_stack:
+                    db = self.collection.document(key)
+                    db.update(self.items[key].update_stack)
+                    self.items[key].update_stack = {}
+        else:
+            if self.model_object and self.model_object.update_stack:
+                db = self.collection.document(self.key)
+                db.update(self.model_object.update_stack)
+                self.model_object.update_stack = {}
 
     def query(self, *filters):
         query = self.collection
@@ -97,13 +109,13 @@ class FireStore:
             query = query.where(*filter_)
         return map(lambda x: (x.id, x.to_dict()), query.stream())
 
-    def get_all(self, cls):
+    def read_all(self, model):
         """
         Get all models from firestore
         """
         self.items = {}
         for item in self.collection.stream():
-            self.items[item.id] = cls.from_dict(item.to_dict())
+            self.items[item.id] = model.from_dict(item.to_dict())
             self.items[item.id].key = item.id
             self.items[item.id].route_paths()
         return self.items
