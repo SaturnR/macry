@@ -21,6 +21,7 @@ class FireStore:
         self.items = {}
         self.update_stack = {}
         self.model_object = None
+        self.new_items = []
 
     def connect(self, collection_name,
                 project=None,
@@ -36,7 +37,7 @@ class FireStore:
                     scopes=(
                         "https://www.googleapis.com/auth/cloud-platform",
                         "https://www.googleapis.com/auth/datastore",
-                    ), 
+                    ),
                 )
 
             self.client = firestore.Client(project=project,
@@ -74,7 +75,7 @@ class FireStore:
     def get_docs(self):
         return [d.to_dict() for d in self.collection.stream()]
 
-    def set(self, key, data):
+    def set(self, key, data=None):
         if not key:
             key = self.key
         if type(self).__name__ != 'FireStore' and not data:
@@ -89,6 +90,11 @@ class FireStore:
             # TODO - handle exeception
             raise
 
+    def __setitem__(self, key, model):
+        self.new_items.append(key)
+        self.items[key] = model
+
+    # TODO - Rename to commit
     def update(self):
         if self.items:
             for key in self.items:
@@ -97,6 +103,10 @@ class FireStore:
                     db = self.collection.document(key)
                     db.update(self.items[key].update_stack)
                     self.items[key].update_stack = {}
+                elif key in self.new_items:
+                    db = self.collection.document(key)
+                    db.set(self.items[key].to_dict())
+                    self.new_items.remove(key)
         else:
             if self.model_object and self.model_object.update_stack:
                 db = self.collection.document(self.key)

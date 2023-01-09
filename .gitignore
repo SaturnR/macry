@@ -172,3 +172,7 @@ private_env.yaml
 
 # VScode
 .vscode/settings.json
+
+
+# GCP service account key
+service_account_key.json

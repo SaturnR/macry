@@ -130,7 +130,7 @@ class FireMap(Field, dict):
     def __init__(self,
                  obj_type=None,
                  default=None,
-                 entity: Field = None,
+                 entity = None,
                  required=False,
                  key=None):
         super().__init__()
@@ -166,7 +166,7 @@ class FireMap(Field, dict):
 class FireArray(Field, list):
     def __init__(self,
                  default=None,
-                 entity: Field = None,
+                 entity = None,
                  required=False,
                  key=None,
                  collection=None):
