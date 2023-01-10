@@ -7,7 +7,7 @@ class Field:
     def __set_name__(self, owner_cls, prop_name):
         self.prop_name = prop_name
         if not hasattr(owner_cls, '__field_items__'):
-            owner_cls.__field_items__ = set()
+            owner_cls.__field_items__ = []
         owner_cls.__field_items__.add(self.prop_name)
 
         if hasattr(owner_cls, '__data_path__'):
